@@ -105,3 +105,40 @@ SELECT
 	END as sls_price
 FROM bronze.crm_sales_details
 GO
+
+-- LOAD ERP CUST meta data bdate
+INSERT INTO silver.erp_cust_az12(
+	CID,
+	BDATE,
+	GEN
+)
+SELECT
+	CASE
+		WHEN CID LIKE 'NAS%' THEN SUBSTRING(CID,4,LEN(CID))
+		ELSE CID
+	END as CID,
+	CASE
+		WHEN BDATE > GETDATE() THEN NULL
+		ELSE BDATE
+	END as BDATE,
+	CASE 
+		WHEN TRIM(UPPER(GEN)) IN ('F','FEMALE') THEN 'Female'
+		WHEN TRIM(UPPER(GEN)) IN ('M','MALE') THEN 'Male'
+		ELSE 'NA'
+	END as GEN
+FROM bronze.erp_cust_az12
+
+-- LOAD ERP location meta dta 
+INSERT INTO silver.erp_loc_a101(
+	CID,
+	CNTRY
+)
+SELECT 
+	REPLACE(CID,'-','') as CID,
+	CASE 
+		WHEN TRIM(CNTRY) = 'DE' THEN 'Germany'
+		WHEN TRIM(CNTRY) IN ('US','USA') THEN 'United States'
+		WHEN TRIM(CNTRY) = '' OR CNTRY IS NULL THEN 'NA'
+		ELSE TRIM(CNTRY)
+	END as CNTRY
+FROM bronze.erp_loc_a101
